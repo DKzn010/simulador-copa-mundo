@@ -2,6 +2,7 @@ import pygame
 import random
 import math
 import sys
+import os
 
 pygame.init()
 
@@ -15,6 +16,80 @@ FONT = pygame.font.SysFont("arial", 30)
 SMALL = pygame.font.SysFont("arial", 22)
 BIG = pygame.font.SysFont("arial", 44, bold=True)
 TITLE = pygame.font.SysFont("arial", 56, bold=True)
+
+FLAG_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "assets",
+    "flags"
+)
+COUNTRY_FLAGS = {
+    "Brasil": "br",
+    "Argentina": "ar",
+    "França": "fr",
+    "Espanha": "es",
+    "Inglaterra": "gb-eng",
+    "Portugal": "pt",
+    "Alemanha": "de",
+    "Países Baixos": "nl",
+    "Itália": "it",
+    "Bélgica": "be",
+    "Croácia": "hr",
+    "Uruguai": "uy",
+    "Colômbia": "co",
+    "Marrocos": "ma",
+    "Japão": "jp",
+    "EUA": "us",
+    "México": "mx",
+    "Suíça": "ch",
+    "Dinamarca": "dk",
+    "Turquia": "tr",
+    "Senegal": "sn",
+    "Coreia do Sul": "kr",
+    "Irã": "ir",
+    "Equador": "ec",
+    "Áustria": "at",
+    "Ucrânia": "ua",
+    "Polônia": "pl",
+    "Sérvia": "rs",
+    "Canadá": "ca",
+    "Austrália": "au",
+    "Nigéria": "ng",
+    "Egito": "eg",
+    "Argélia": "dz",
+    "Camarões": "cm",
+    "Gana": "gh",
+    "Costa do Marfim": "ci",
+    "Tunísia": "tn",
+    "África do Sul": "za",
+    "Catar": "qa",
+    "Arábia Saudita": "sa",
+    "Iraque": "iq",
+    "Uzbequistão": "uz",
+    "China": "cn",
+    "Jordânia": "jo",
+    "Chile": "cl",
+    "Peru": "pe",
+    "Paraguai": "py",
+    "Venezuela": "ve",
+    "Costa Rica": "cr",
+    "Panamá": "pa",
+    "Jamaica": "jm",
+    "Honduras": "hn",
+    "Guatemala": "gt",
+    "Bolívia": "bo",
+    "Nova Zelândia": "nz",
+    "Fiji": "fj",
+    "RD Congo": "cd",
+    "Mali": "ml",
+    "Burkina Faso": "bf",
+    "Grécia": "gr",
+    "Escócia": "gb-sct",
+    "República Tcheca": "cz",
+    "Romênia": "ro",
+    "Índia": "in"
+}
+
+FLAG_CACHE = {}
 
 WHITE = (255, 255, 255)
 
@@ -107,6 +182,71 @@ def draw_text(text, x, y, font=FONT, color=WHITE, center=False):
         rect = surface.get_rect(topleft=(x, y))
 
     screen.blit(surface, rect)
+
+
+def get_team_flag(team, font=FONT):
+    name = team[0]
+    flag_code = COUNTRY_FLAGS[name]
+
+    if font == SMALL:
+        flag_box = (34, 22)
+    elif font == FONT:
+        flag_box = (42, 27)
+    else:
+        flag_box = (64, 40)
+
+    cache_key = (flag_code, flag_box)
+
+    if cache_key not in FLAG_CACHE:
+        flag_path = os.path.join(FLAG_DIR, flag_code + ".svg")
+        flag = pygame.image.load(flag_path).convert_alpha()
+        source_width, source_height = flag.get_size()
+        scale = min(
+            flag_box[0] / source_width,
+            flag_box[1] / source_height
+        )
+        flag_size = (
+            max(1, round(source_width * scale)),
+            max(1, round(source_height * scale))
+        )
+        scale_method = (
+            pygame.transform.scale
+            if source_width < flag_size[0] * 2
+            else pygame.transform.smoothscale
+        )
+        FLAG_CACHE[cache_key] = scale_method(flag, flag_size)
+
+    return FLAG_CACHE[cache_key]
+
+
+def draw_team_flag(team, x, y, font=FONT, center=False):
+    flag = get_team_flag(team, font)
+    flag_rect = flag.get_rect()
+
+    if center:
+        flag_rect.center = (x, y)
+    else:
+        flag_rect.topleft = (x, y)
+
+    screen.blit(flag, flag_rect)
+
+
+def draw_team_name(team, x, y, font=FONT, color=WHITE, center=False):
+    name = team[0]
+    surface = font.render(name, True, color)
+    if center:
+        name_rect = surface.get_rect(center=(x, y))
+    else:
+        name_rect = surface.get_rect(topleft=(x, y))
+    flag = get_team_flag(team, font)
+    flag_rect = flag.get_rect()
+    flag_rect.center = (
+        name_rect.centerx,
+        name_rect.top - flag_rect.height // 2 - 8
+    )
+
+    screen.blit(flag, flag_rect)
+    screen.blit(surface, name_rect)
 
 
 def menu_panel(x=250, y=40, w=1420, h=1120):
@@ -244,8 +384,8 @@ def user_penalty_screen(team_a, team_b):
             True
         )
 
-        draw_text(
-            team_a[0],
+        draw_team_name(
+            team_a,
             600,
             330,
             BIG,
@@ -253,8 +393,8 @@ def user_penalty_screen(team_a, team_b):
             True
         )
 
-        draw_text(
-            team_b[0],
+        draw_team_name(
+            team_b,
             1320,
             330,
             BIG,
@@ -479,8 +619,8 @@ def show_penalty_result(team_a, team_b, score_a, score_b, sudden_death):
             True
         )
 
-        draw_text(
-            team_a[0],
+        draw_team_name(
+            team_a,
             600,
             390,
             BIG,
@@ -488,8 +628,8 @@ def show_penalty_result(team_a, team_b, score_a, score_b, sudden_death):
             True
         )
 
-        draw_text(
-            team_b[0],
+        draw_team_name(
+            team_b,
             1320,
             390,
             BIG,
@@ -537,9 +677,18 @@ def show_penalty_result(team_a, team_b, score_a, score_b, sudden_death):
         winner = team_a if score_a > score_b else team_b
 
         draw_text(
-            "Vencedor: " + winner[0],
+            "Vencedor:",
             WIDTH // 2,
-            790,
+            755,
+            SMALL,
+            GREEN,
+            True
+        )
+
+        draw_team_name(
+            winner,
+            WIDTH // 2,
+            815,
             BIG,
             GREEN,
             True
@@ -590,8 +739,8 @@ def ask_score(team_a, team_b):
             True
         )
 
-        draw_text(
-            team_a[0],
+        draw_team_name(
+            team_a,
             600,
             350,
             BIG,
@@ -599,8 +748,8 @@ def ask_score(team_a, team_b):
             True
         )
 
-        draw_text(
-            team_b[0],
+        draw_team_name(
+            team_b,
             1320,
             350,
             BIG,
@@ -737,17 +886,34 @@ def choose_team_screen():
             True
         )
 
-        start = max(0, selected - 8)
-        end = min(len(TEAMS), start + 16)
+        start = max(0, selected - 5)
+        end = min(len(TEAMS), start + 11)
+
+        draw_text(
+            "SELEÇÃO",
+            560,
+            150,
+            SMALL,
+            LIGHT_GRAY
+        )
+
+        draw_text(
+            "BANDEIRA",
+            850,
+            150,
+            SMALL,
+            LIGHT_GRAY,
+            True
+        )
 
         for i in range(start, end):
-            y = 180 + (i - start) * 50
+            y = 205 + (i - start) * 75
 
             if i == selected:
                 pygame.draw.rect(
                     screen,
                     BLUE,
-                    (500, y - 5, 920, 42),
+                    (500, y - 10, 920, 55),
                     border_radius=8
                 )
 
@@ -755,10 +921,18 @@ def choose_team_screen():
 
             draw_text(
                 name,
-                530,
+                560,
                 y,
                 FONT,
                 WHITE
+            )
+
+            draw_team_flag(
+                (name, rating),
+                850,
+                y + FONT.get_height() // 2,
+                FONT,
+                True
             )
 
             draw_text(
@@ -920,6 +1094,7 @@ def show_group(group_number, group, table):
         headers = [
             "POS",
             "SELEÇÃO",
+            "BANDEIRA",
             "P",
             "V",
             "E",
@@ -933,6 +1108,7 @@ def show_group(group_number, group, table):
         positions = [
             400,
             520,
+            760,
             1080,
             1160,
             1240,
@@ -967,6 +1143,7 @@ def show_group(group_number, group, table):
             values = [
                 str(index + 1),
                 data["team"][0],
+                "",
                 str(data["P"]),
                 str(data["V"]),
                 str(data["E"]),
@@ -978,14 +1155,32 @@ def show_group(group_number, group, table):
             ]
 
             for i, value in enumerate(values):
-                draw_text(
-                    value,
-                    positions[i],
-                    y + 25,
-                    SMALL,
-                    WHITE,
-                    True
-                )
+                if i == 1:
+                    draw_text(
+                        value,
+                        positions[i],
+                        y + 25,
+                        SMALL,
+                        WHITE,
+                        True
+                    )
+                elif i == 2:
+                    draw_team_flag(
+                        data["team"],
+                        positions[i],
+                        y + 25,
+                        SMALL,
+                        True
+                    )
+                else:
+                    draw_text(
+                        value,
+                        positions[i],
+                        y + 25,
+                        SMALL,
+                        WHITE,
+                        True
+                    )
 
         button(
             (760, 1030, 400, 80),
@@ -1075,6 +1270,23 @@ def show_all_groups(group_results):
             True
         )
 
+        draw_text(
+            "SELEÇÃO",
+            650,
+            220,
+            SMALL,
+            LIGHT_GRAY
+        )
+
+        draw_text(
+            "BANDEIRA",
+            900,
+            220,
+            SMALL,
+            LIGHT_GRAY,
+            True
+        )
+
         for index, data in enumerate(group):
             y = 280 + index * 100
 
@@ -1100,6 +1312,14 @@ def show_all_groups(group_results):
                 y + 20,
                 FONT,
                 WHITE
+            )
+
+            draw_team_flag(
+                data["team"],
+                900,
+                y + 20 + FONT.get_height() // 2,
+                FONT,
+                True
             )
 
             draw_text(
@@ -1212,8 +1432,8 @@ def knockout_round(teams, controlled, round_name):
             True
         )
 
-        draw_text(
-            team_a[0],
+        draw_team_name(
+            team_a,
             600,
             400,
             BIG,
@@ -1230,8 +1450,8 @@ def knockout_round(teams, controlled, round_name):
             True
         )
 
-        draw_text(
-            team_b[0],
+        draw_team_name(
+            team_b,
             1320,
             400,
             BIG,
@@ -1262,8 +1482,8 @@ def knockout_round(teams, controlled, round_name):
             True
         )
 
-        draw_text(
-            winner[0],
+        draw_team_name(
+            winner,
             WIDTH // 2,
             450,
             BIG,
@@ -1298,8 +1518,8 @@ def champion_screen(champion, controlled):
             True
         )
 
-        draw_text(
-            controlled[0],
+        draw_team_name(
+            controlled,
             WIDTH // 2,
             500,
             BIG,
@@ -1335,8 +1555,8 @@ def champion_screen(champion, controlled):
             True
         )
 
-        draw_text(
-            champion[0],
+        draw_team_name(
+            champion,
             WIDTH // 2,
             600,
             BIG,
